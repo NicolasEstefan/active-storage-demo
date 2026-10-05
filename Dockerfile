@@ -25,10 +25,17 @@ ENV RAILS_ENV="production" \
 # Throw-away build stage to reduce size of final image
 FROM base AS build
 
-# Install packages needed to build gems
+# Install packages needed to build gems and JavaScript
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libyaml-dev pkg-config && \
+    apt-get install --no-install-recommends -y build-essential git libyaml-dev pkg-config xz-utils && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Install Node.js to build the Vite frontend
+ARG NODE_VERSION=24.14.0
+ENV PATH=/usr/local/node/bin:$PATH
+RUN curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-$(dpkg --print-architecture | sed 's/amd64/x64/').tar.xz" | \
+    tar -xJ -C /usr/local && \
+    mv /usr/local/node-v${NODE_VERSION}-linux-* /usr/local/node
 
 # Install application gems
 COPY Gemfile Gemfile.lock ./
@@ -36,11 +43,19 @@ RUN bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
     bundle exec bootsnap precompile --gemfile
 
+# Install JavaScript dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
 # Copy application code
 COPY . .
 
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
+
+# Build the Vite frontend into public/vite without requiring the secret RAILS_MASTER_KEY
+RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile && \
+    rm -rf node_modules
 
 
 

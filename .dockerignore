@@ -40,3 +40,7 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# Ignore JavaScript dependencies and local Vite builds, they are installed and built in the image.
+/node_modules/
+/public/vite*

@@ -7,6 +7,5 @@ Rails.application.routes.draw do
 
   resources :recipes, only: %i[show create], defaults: { format: :json }
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  root "frontend#index"
 end
