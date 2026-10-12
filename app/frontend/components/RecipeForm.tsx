@@ -1,12 +1,8 @@
 import { useState, type SubmitEvent } from "react"
+import { useNavigate } from "react-router"
 import { useDirectUploads } from "../hooks/useDirectUploads"
 import { FileDropzone } from "./FileDropzone"
 import { UploadList } from "./UploadList"
-
-interface CreatedRecipe {
-  id: number
-  title: string
-}
 
 const inputClassName =
   "block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-xs placeholder:text-slate-400 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
@@ -16,9 +12,9 @@ export function RecipeForm() {
   const [description, setDescription] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
-  const [createdRecipe, setCreatedRecipe] = useState<CreatedRecipe>()
   const images = useDirectUploads()
   const video = useDirectUploads()
+  const navigate = useNavigate()
 
   const isUploading = images.isUploading || video.isUploading
   const hasUploadErrors = images.hasErrors || video.hasErrors
@@ -27,7 +23,6 @@ export function RecipeForm() {
     event.preventDefault()
     setIsSubmitting(true)
     setErrors([])
-    setCreatedRecipe(undefined)
 
     try {
       const response = await fetch("/recipes", {
@@ -40,11 +35,7 @@ export function RecipeForm() {
       const data = await response.json()
 
       if (response.ok) {
-        setCreatedRecipe(data)
-        setTitle("")
-        setDescription("")
-        images.clear()
-        video.clear()
+        navigate(`/recipes/${data.id}`)
       } else {
         setErrors(data.errors ?? ["Something went wrong."])
       }
@@ -56,21 +47,7 @@ export function RecipeForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-xl shadow-slate-200/50 backdrop-blur sm:p-8"
-    >
-      {createdRecipe && (
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          <span>
-            Recipe <strong className="font-semibold">{createdRecipe.title}</strong> created.
-          </span>
-          <a href={`/recipes/${createdRecipe.id}`} target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2 hover:text-emerald-950">
-            View JSON
-          </a>
-        </div>
-      )}
-
+    <form onSubmit={handleSubmit} className="space-y-6">
       {errors.length > 0 && (
         <ul className="space-y-1 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {errors.map((error) => (

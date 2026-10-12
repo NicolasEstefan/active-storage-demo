@@ -5,6 +5,10 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  constraints ->(request) { request.format.html? } do
+    get "recipes/:id", to: "frontend#index", as: nil
+  end
+
   resources :recipes, only: %i[show create], defaults: { format: :json }
 
   root "frontend#index"
